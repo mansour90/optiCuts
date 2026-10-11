@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Optimizator tăieri țeavă</title>
+<style>
+:root{--bg:#f6f7f9;--c:#fff;--t:#1a1d23;--m:#6b7280;--b:#d9dce1;--a:#2563eb;--w:#fca5a5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111317;--c:#1a1d23;--t:#e8eaed;--m:#9aa0a8;--b:#2d313a;--w:#7f3030}}
+:root[data-theme="dark"]{--bg:#111317;--c:#1a1d23;--t:#e8eaed;--m:#9aa0a8;--b:#2d313a;--w:#7f3030}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:15px system-ui,Segoe UI,Arial,sans-serif}
+main{max-width:960px;margin:auto;padding:16px}h1{font-size:22px;margin:4px 0 14px}h2{font-size:16px;margin:0 0 10px}
+.g{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.card{background:var(--c);border:1px solid var(--b);border-radius:10px;padding:14px;margin-bottom:12px}
+.r{display:flex;gap:6px;margin-bottom:6px}.r input{flex:1;min-width:0}
+input,select,button{font:inherit;padding:7px 9px;border:1px solid var(--b);border-radius:7px;background:var(--bg);color:var(--t)}
+button{cursor:pointer}.p{background:var(--a);color:#fff;border-color:var(--a);font-weight:600}
+small{color:var(--m)}.k{display:flex;gap:10px;flex-wrap:wrap}.k div{flex:1;min-width:120px;background:var(--bg);border-radius:8px;padding:10px}
+.k b{display:block;font-size:20px}
+.bar{display:flex;height:46px;border:1px solid var(--b);border-radius:6px;overflow:hidden;margin:4px 0}
+.bar span{color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;border-right:2px solid var(--c);overflow:hidden;white-space:nowrap}
+.bar span{padding:0}.bar span.v{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px}.bar .w{background:repeating-linear-gradient(45deg,var(--w),var(--w) 5px,transparent 5px,transparent 10px);color:var(--t)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+#op{display:none}#op h1{font-size:20px;margin:0 0 6px}#op h3{font-size:15px;margin:0 0 4px}#op table{width:100%;border-collapse:collapse;margin:6px 0}#op th,#op td{border:1px solid #000;padding:4px 7px;text-align:left}#op td:last-child{width:50px;text-align:center}.sg{margin-top:24px;display:flex;gap:40px}
+@media print{:root:root:root{--c:#fff;--b:#999;--w:#fca5a5;--t:#000;--bg:#fff;--m:#444}@page{size:A4;margin:12mm}.no,#out{display:none!important}#op{display:block;color:#000}body{background:#fff;color:#000}.bg{break-inside:avoid;margin:14px 0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body><main>
+<h1 class="no">Optimizator tăieri țeavă / profile</h1>
+<div class="g no">
+ <div class="card"><h2>Bare disponibile</h2><small>Lungime · Cantitate (0 = nelimitat)</small><div id="st"></div>
+  <button onclick="stocks.push({l:6000,q:0});ui()">+ Lungime stoc</button></div>
+ <div class="card"><h2>Piese de tăiat</h2><small>Lungime · Buc. · Denumire</small><div id="pt"></div>
+  <div class="tools"><button onclick="parts.push({l:0,q:1,n:''});ui()">+ Piesă</button>
+  <button onclick="$('#f').click()">Import CSV</button><input id="f" type="file" accept=".csv,.txt" hidden></div></div>
+</div>
+<div class="card no"><div class="r" style="align-items:center;flex-wrap:wrap">
+ <input id="proj" placeholder="Proiect / client" style="min-width:140px"><input id="mat" placeholder="Material (ex. țeavă 40×40×2)" style="min-width:180px"><label>Grosime tăietură <input id="kerf" type="number" value="3" min="0" step="0.1" style="width:80px;flex:none"></label>
+ <label>Unitate <select id="u" style="flex:none"><option>mm</option><option>cm</option><option>m</option><option>in</option></select></label>
+ <button class="p" onclick="run()" style="margin-left:auto">Calculează</button></div></div>
+<div id="out"></div><div id="op"></div>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+let stocks=[{l:6000,q:0}],parts=[{l:1200,q:6,n:'A'},{l:850,q:8,n:'B'},{l:2300,q:3,n:'C'},{l:450,q:10,n:'D'}];
+try{const d=JSON.parse(localStorage.getItem('oc'));if(d){stocks=d.s;parts=d.p}}catch(e){}
+function ui(){
+ $('#st').innerHTML=stocks.map((s,i)=>`<div class=r><input type=number value="${s.l}" oninput="stocks[${i}].l=+this.value"><input type=number min=0 value="${s.q}" oninput="stocks[${i}].q=+this.value"><button onclick="stocks.splice(${i},1);ui()">✕</button></div>`).join('');
+ $('#pt').innerHTML=parts.map((s,i)=>`<div class=r><input type=number value="${s.l}" oninput="parts[${i}].l=+this.value"><input type=number min=1 value="${s.q}" style="max-width:70px" oninput="parts[${i}].q=+this.value"><input value="${s.n}" placeholder="nume" style="max-width:90px" oninput="parts[${i}].n=this.value"><button onclick="parts.splice(${i},1);ui()">✕</button></div>`).join('');
+}
+$('#f').onchange=e=>{const r=new FileReader();r.onload=()=>{parts=r.result.split(/\r?\n/).map(x=>x.split(/[,;\t]/)).filter(x=>+x[0]>0).map(x=>({l:+x[0],q:+x[1]||1,n:x[2]||''}));ui()};r.readAsText(e.target.files[0])};
+function pack(items,S,K,mode){
+ const bars=[],av=S.map(s=>s.q||1e9),bad=[];
+ for(const it of items){
+  let bi=-1,best=1e18;
+  bars.forEach((b,i)=>{const need=b.u+(b.p.length?K:0)+it.l;if(need<=b.L){const r=b.L-need;if(mode?r<best:bi<0){best=r;bi=i}}});
+  if(bi<0){let si=-1;S.forEach((s,i)=>{if(s.l>=it.l&&av[i]>0&&(si<0||s.l<S[si].l))si=i});
+   if(si<0){bad.push(it);continue}
+   av[si]--;bars.push({L:S[si].l,si,u:0,p:[]});bi=bars.length-1}
+  const b=bars[bi];b.u+=(b.p.length?K:0)+it.l;b.p.push(it)}
+ bars.forEach(b=>S.forEach((s,i)=>{if(s.l<b.L&&s.l>=b.u&&av[i]>0){av[b.si]++;av[i]--;b.L=s.l;b.si=i}}));
+ return{bars,bad,sc:[bad.length,bars.reduce((a,b)=>a+b.L,0),bars.length]}}
+const better=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!=b[i])return a[i]<b[i]}return false};
+function run(){
+ try{localStorage.setItem('oc',JSON.stringify({s:stocks,p:parts}))}catch(e){}
+ const K=+$('#kerf').value||0,u=$('#u').value,S=stocks.filter(s=>s.l>0).map(s=>({l:s.l,q:s.q|0}));
+ let items=[];parts.forEach(p=>{if(p.l>0)for(let i=0;i<(p.q|0);i++)items.push({l:p.l,n:p.n})});
+ if(!S.length||!items.length){$('#out').innerHTML='<div class=card>Adaugă bare și piese.</div>';return}
+ const base=items.slice().sort((a,b)=>b.l-a.l);let best=null;
+ for(let t=0;t<800;t++){let o=base.slice();
+  if(t>1)for(let k=0;k<1+t%8;k++){const i=Math.random()*o.length|0,j=Math.min(o.length-1,i+1+(Math.random()*4|0));[o[i],o[j]]=[o[j],o[i]]}
+  const r=pack(o,S,K,t%2);if(!best||better(r.sc,best.sc))best=r}
+ const tot=best.bars.reduce((a,b)=>a+b.L,0),used=best.bars.reduce((a,b)=>a+b.p.reduce((x,p)=>x+p.l,0),0),w=tot-used;
+ const grp={};best.bars.forEach(b=>{b.p.sort((x,y)=>y.l-x.l);const k=b.L+'|'+b.p.map(p=>p.l).sort((x,y)=>y-x).join(',');(grp[k]=grp[k]||{b,c:0}).c++});
+ const col=l=>`hsl(${(l*37)%360},55%,45%)`;
+ let h=`<div class=card><h2>Rezultat</h2><div class=k><div><small>Bare necesare</small><b>${best.bars.length}</b></div><div><small>Lungime totală</small><b>${tot.toLocaleString('ro')} ${u}</b></div><div><small>Deșeu</small><b>${tot?(w/tot*100).toFixed(1):0}%</b></div><div><small>Resturi totale</small><b>${w.toLocaleString('ro')} ${u}</b></div></div>`;
+ if(best.bad.length)h+=`<p style="color:#dc2626"><b>Nu încap în nicio bară:</b> ${best.bad.map(x=>x.l).join(', ')} ${u}</p>`;
+ h+=`<div class=tools><button class=p onclick="pr()">🖨 Printează fișa pentru operator</button><button id=dl onclick="dl()" ${DL?'':'hidden'}>⬇ Descarcă fișa (HTML, pentru print)</button></div></div><div class=card><h2>Plan de tăiere</h2>`;
+ Object.values(grp).forEach(({b,c})=>{
+  const rest=b.L-b.u;
+  h+=`<p style="margin:12px 0 0"><b>${c} × bară ${b.L} ${u}</b> <small>— rest ${rest.toFixed(1).replace(/\.0$/,'')} ${u}</small></p><div class=bar>`+
+  b.p.map(p=>`<span class="${p.l/b.L<.06?'v':''}" title="${p.n}" style="width:${p.l/b.L*100}%;background:${col(p.l)}">${p.l+(p.l/b.L>.1&&p.n?' '+p.n:'')}</span>`).join('')+
+  (rest>0?`<span class=w style="width:${rest/b.L*100}%"></span>`:'')+`</div><small>${b.p.map(p=>p.l).join(' + ')}</small>`});
+ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ const fm=x=>(+x.toFixed(1)).toString();
+ const cnt={};items.forEach(i=>{const k=i.l+'|'+i.n;(cnt[k]=cnt[k]||{l:i.l,n:i.n,c:0}).c++});
+ let o=`<h1>Fișă de debitare</h1><p><b>Proiect:</b> ${esc($('#proj').value)} &nbsp; <b>Material:</b> ${esc($('#mat').value)} &nbsp; <b>Data:</b> ${new Date().toLocaleDateString('ro')}<br><b>Tăietură:</b> ${K} ${u} &nbsp; <b>Bare de tăiat:</b> ${best.bars.length} &nbsp; <b>Deșeu:</b> ${tot?(w/tot*100).toFixed(1):0}%</p><h3>Lista de piese (verificare)</h3><table><tr><th>Lungime (${u})</th><th>Buc.</th><th>Denumire</th><th>✓</th></tr>`+Object.values(cnt).sort((a,b)=>b.l-a.l).map(x=>`<tr><td>${x.l}</td><td>${x.c}</td><td>${esc(x.n)}</td><td>☐</td></tr>`).join('')+'</table>';
+ Object.values(grp).forEach(({b,c},n)=>{let pos=0;
+  o+=`<section class=bg><h3>Model ${n+1}: ${c} × bară ${b.L} ${u} <small>(rest ${fm(b.L-b.u)} ${u})</small></h3><div class=bar>`+b.p.map(p=>`<span class="${p.l/b.L<.06?'v':''}" style="width:${p.l/b.L*100}%;background:${col(p.l)}">${p.l}</span>`).join('')+(b.L>b.u?`<span class=w style="width:${(b.L-b.u)/b.L*100}%"></span>`:'')+`</div><table><tr><th>#</th><th>Lungime</th><th>Denumire</th><th>Tăiere la</th><th>✓ ×${c}</th></tr>`+
+  b.p.map((p,i)=>{pos+=p.l;const r=`<tr><td>${i+1}</td><td><b>${p.l}</b></td><td>${esc(p.n)}</td><td>${fm(pos)}</td><td>☐</td></tr>`;pos+=K;return r}).join('')+'</table></section>'});
+ $('#op').innerHTML=o+'<div class=sg><span>Debitat de: ________________</span><span>Data: __________</span></div>';
+ $('#out').innerHTML=h+'</div>'}
+let DL=null;
+try{window.claude&&window.claude.use('downloads').then(d=>{DL=d;const b=$('#dl');if(b)b.hidden=!d}).catch(()=>{})}catch(e){}
+function mk(){
+ const doc=`<!DOCTYPE html><html lang=ro><head><meta charset=utf-8><title>Fișă debitare</title><style>body{font:14px Arial,sans-serif;margin:16px;color:#000}h1{font-size:20px;margin:0 0 6px}h3{font-size:15px;margin:0 0 4px}table{width:100%;border-collapse:collapse;margin:6px 0}th,td{border:1px solid #000;padding:4px 7px;text-align:left}td:last-child{width:50px;text-align:center}.bar{display:flex;height:46px;border:1px solid #999;border-radius:6px;overflow:hidden;margin:4px 0}.bar span{color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;border-right:2px solid #fff;overflow:hidden;white-space:nowrap}.bar span.v{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px}.bar .w{background:repeating-linear-gradient(45deg,#fca5a5,#fca5a5 5px,transparent 5px,transparent 10px)}.bg{break-inside:avoid;margin:14px 0}.sg{margin-top:24px;display:flex;gap:40px}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:12mm}@media print{.np{display:none}}</style></head><body><button class=np onclick="print()">🖨 Printează</button>${$('#op').innerHTML}</body></html>`;return doc}
+async function dl(){if(!DL)return;const b=$('#dl');try{await DL.save({filename:'fisa-debitare.html',data:mk()})}catch(e){if(!e||e.code!=='declined')b.textContent='Descărcare indisponibilă'}}
+function pr(){
+ let w=null;try{w=window.open('','_blank')}catch(e){}
+ if(w&&w.document){w.document.open();w.document.write(mk());w.document.close();w.focus();return}
+ if(DL)dl();else document.querySelector('.tools .p').textContent='Fereastră blocată – salvează pagina ca fișier .html'
+}
+ui();run();
+</script></body></html>
